@@ -1,0 +1,27 @@
+services:
+  backend:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    container_name: medilens-backend
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=sqlite:///./medilens.db
+      - JWT_SECRET=production_super_secret_jwt_key_medilens_2026
+      - PORT=8000
+    volumes:
+      - ./server/uploads:/app/uploads
+      - ./server/medilens.db:/app/medilens.db
+
+  frontend:
+    build:
+      context: ./client
+      dockerfile: Dockerfile
+    container_name: medilens-frontend
+    restart: unless-stopped
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend

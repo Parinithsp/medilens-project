@@ -1,0 +1,12 @@
+{
+  "name": "medilens-fullstack",
+  "version": "1.0.0",
+  "private": true,
+  "description": "MediLens Fullstack Application - Frontend & Backend",
+  "scripts": {
+    "install:frontend": "cd frontend && npm install",
+    "dev:frontend": "cd frontend && npm run dev",
+    "build:frontend": "cd frontend && npm run build",
+    "dev:backend": "cd backend && uvicorn app.main:app --reload --host 127.0.0.1 --port 8000"
+  }
+}

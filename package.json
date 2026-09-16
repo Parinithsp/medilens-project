@@ -1,0 +1,13 @@
+{
+  "name": "medilens",
+  "version": "1.0.0",
+  "private": true,
+  "description": "MediLens AI Medical Report Summarizer & Clinical Biomarker Intelligence System",
+  "scripts": {
+    "build": "cd client && npm run build",
+    "client:install": "cd client && npm install",
+    "client:dev": "cd client && npm run dev",
+    "client:build": "cd client && npm run build",
+    "server:dev": "cd server && uvicorn app.main:app --reload --host 127.0.0.1 --port 8000"
+  }
+}
