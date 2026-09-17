@@ -82,7 +82,14 @@ export default function SignUpPage({
       });
       onAuthSuccess(data.user);
     } catch (err) {
-      const detail = err.response?.data?.detail || 'Registration failed. Please check your details.';
+      let detail = err.response?.data?.detail;
+      if (!detail) {
+        if (err.message === 'Network Error' || err.code === 'ERR_NETWORK') {
+          detail = 'Cannot connect to backend server. Please verify the server is running on port 8000.';
+        } else {
+          detail = 'Registration failed. Please check your details and try again.';
+        }
+      }
       setGeneralError(detail);
       showToast({
         type: 'error',
