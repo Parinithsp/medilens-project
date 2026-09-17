@@ -108,6 +108,30 @@ Open your browser and navigate to:
 
 ---
 
+## 🔐 Firebase Google Authentication Setup
+
+MediLens supports production-ready Google Authentication via Firebase Auth. To configure it with your Firebase project:
+
+1. **Create/Open a Firebase Project**: Go to the [Firebase Console](https://console.firebase.google.com/).
+2. **Enable Google Sign-In**:
+   - Navigate to **Authentication** > **Sign-in method**.
+   - Click **Google**, toggle **Enable**, set your Project support email, and save.
+   - Verify that `localhost` is listed in **Authorized domains** (Authentication > Settings > Authorized domains).
+3. **Register a Web App & Copy Keys**:
+   - Go to **Project settings** (gear icon) > **General** > **Your apps** > Add Web App (`</>`).
+   - Copy the `firebaseConfig` properties into `client/.env`:
+   ```env
+   VITE_FIREBASE_API_KEY=AIzaSy...
+   VITE_FIREBASE_AUTH_DOMAIN=your-app.firebaseapp.com
+   VITE_FIREBASE_PROJECT_ID=your-app
+   VITE_FIREBASE_STORAGE_BUCKET=your-app.appspot.com
+   VITE_FIREBASE_MESSAGING_SENDER_ID=1234567890
+   VITE_FIREBASE_APP_ID=1:1234567890:web:...
+   ```
+4. **Restart Vite**: Restart `npm run dev` to pick up the updated `.env` keys. Users can now sign in seamlessly with Google on the Login page, Sign-Up page, and Auth modal!
+
+---
+
 ## 📋 Database Configuration (MySQL / SQLite)
 
 The database connection is configured in `server/.env` (or `server/app/config.py`):

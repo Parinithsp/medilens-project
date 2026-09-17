@@ -1,14 +1,57 @@
+import json
+import secrets
+import urllib.request
+import urllib.parse
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from app.database import get_db
 from app.models import User
 from app.schemas import (
     UserCreate, UserLogin, UserResponse, Token, 
-    ForgotPasswordRequest, UserProfileUpdate, ChangePasswordRequest
+    ForgotPasswordRequest, UserProfileUpdate, ChangePasswordRequest,
+    GoogleLoginRequest
 )
 from app.auth import get_password_hash, verify_password, create_access_token, require_current_user
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
+
+@router.post("/google", response_model=Token)
+def google_auth(data: GoogleLoginRequest, db: Session = Depends(get_db)):
+    """
+    Authenticate or register a user using Firebase Google Sign-In credentials.
+    """
+    email = data.email.strip().lower()
+    if not email:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Valid email address is required for Google authentication."
+        )
+
+    # Find existing user or create a new user profile
+    user = db.query(User).filter(User.email.ilike(email)).first()
+    
+    if not user:
+        # Auto-provision user account for first-time Google sign-in
+        default_name = data.full_name or email.split("@")[0].replace(".", " ").title()
+        random_pwd = secrets.token_urlsafe(32)
+        user = User(
+            email=email,
+            hashed_password=get_password_hash(random_pwd),
+            full_name=default_name.strip()
+        )
+        db.add(user)
+        db.commit()
+        db.refresh(user)
+    else:
+        # Update full name if it was previously empty or default
+        if data.full_name and (not user.full_name or user.full_name == user.email.split("@")[0].title()):
+            user.full_name = data.full_name.strip()
+            db.commit()
+            db.refresh(user)
+
+    # Issue MediLens session token
+    token = create_access_token(data={"sub": user.email, "id": user.id})
+    return Token(access_token=token, user=UserResponse.from_orm(user))
 
 @router.post("/register", response_model=Token)
 def register(user_data: UserCreate, db: Session = Depends(get_db)):

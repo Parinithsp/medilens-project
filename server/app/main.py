@@ -28,9 +28,10 @@ app = FastAPI(
     version="1.0.0"
 )
 
-# CORS configuration
+# CORS configuration - supports production domains (Vercel, Netlify, Render) & local dev
 app.add_middleware(
     CORSMiddleware,
+    allow_origin_regex=r"^https?:\/\/.*",
     allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],

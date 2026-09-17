@@ -1,6 +1,24 @@
 import axios from 'axios';
+import { signOutFirebase } from './firebase';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || '/api';
+const resolveApiBaseUrl = () => {
+  const envUrl = import.meta.env.VITE_API_URL;
+  if (!envUrl || envUrl.trim() === '') {
+    return '/api';
+  }
+  let url = envUrl.trim();
+  // Auto-prepend https:// if bare host is supplied (e.g. from cloud platforms)
+  if (!url.startsWith('http://') && !url.startsWith('https://') && !url.startsWith('/')) {
+    url = `https://${url}`;
+  }
+  // Ensure /api endpoint prefix
+  if (!url.endsWith('/api') && !url.endsWith('/api/')) {
+    url = url.replace(/\/+$/, '') + '/api';
+  }
+  return url;
+};
+
+const API_BASE_URL = resolveApiBaseUrl();
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -18,6 +36,19 @@ api.interceptors.request.use((config) => {
 export const authAPI = {
   login: async (email, password) => {
     const res = await api.post('/auth/login', { email, password });
+    if (res.data?.access_token) {
+      localStorage.setItem('medilens_token', res.data.access_token);
+      localStorage.setItem('medilens_user', JSON.stringify(res.data.user));
+    }
+    return res.data;
+  },
+  googleLogin: async ({ idToken, email, fullName, photoUrl }) => {
+    const res = await api.post('/auth/google', {
+      id_token: idToken,
+      email,
+      full_name: fullName,
+      photo_url: photoUrl
+    });
     if (res.data?.access_token) {
       localStorage.setItem('medilens_token', res.data.access_token);
       localStorage.setItem('medilens_user', JSON.stringify(res.data.user));
@@ -74,6 +105,7 @@ export const authAPI = {
   logout: () => {
     localStorage.removeItem('medilens_token');
     localStorage.removeItem('medilens_user');
+    signOutFirebase();
   },
   getCurrentUser: () => {
     const userStr = localStorage.getItem('medilens_user');

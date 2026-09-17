@@ -18,7 +18,62 @@ def answer_report_question(
 ) -> str:
     """Answers patient questions about their specific laboratory results."""
     
-    # 1. Check if OpenAI LLM API is available
+    # 1. Check if Gemini LLM API is available
+    if settings.GEMINI_API_KEY:
+        try:
+            import urllib.request
+            system_prompt = f"""
+You are the MediLens Medical Report Assistant.
+You are helping a patient understand their specific laboratory report.
+
+PATIENT & REPORT CONTEXT:
+Patient Name: {report_data.get('patient_name', 'Patient')}
+Report Date: {report_data.get('report_date', 'Unknown')}
+Lab Name: {report_data.get('lab_name', 'Laboratory')}
+
+EXTRACTED BIOMARKERS:
+{json.dumps([{
+    'name': b['test_name'],
+    'value': f"{b['value_str']} {b.get('unit', '')}",
+    'reference_range': b.get('reference_range', ''),
+    'status': b.get('status', '')
+} for b in biomarkers], indent=2)}
+
+REPORT SUMMARY:
+{report_data.get('summary_text', '')}
+
+SAFETY & CLINICAL RULES:
+1. Explain findings in calm, simple, patient-accessible terminology.
+2. Ground your explanations directly on their measured lab numbers.
+3. NEVER make a definitive medical diagnosis.
+4. NEVER prescribe medication, dosage, or therapeutic interventions.
+5. Emphasize questions they should discuss with their doctor.
+6. Keep responses succinct, empathetic, and structured with bullet points where appropriate.
+"""
+            full_prompt = f"{system_prompt}\n\nRecent Chat History:\n"
+            for msg in chat_history[-6:]:
+                full_prompt += f"{msg['role'].title()}: {msg['content']}\n"
+            full_prompt += f"\nPatient question: {user_question}\nAssistant:"
+
+            url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key={settings.GEMINI_API_KEY}"
+            payload = {
+                "contents": [{"parts": [{"text": full_prompt}]}]
+            }
+            req = urllib.request.Request(
+                url,
+                data=json.dumps(payload).encode("utf-8"),
+                headers={"Content-Type": "application/json"}
+            )
+            with urllib.request.urlopen(req, timeout=25) as response:
+                if response.status == 200:
+                    resp_data = json.loads(response.read().decode("utf-8"))
+                    text = resp_data["candidates"][0]["content"]["parts"][0]["text"]
+                    if text and text.strip():
+                        return text.strip()
+        except Exception as e:
+            logger.warning(f"Gemini LLM chat call failed ({e}), checking alternatives.")
+
+    # 2. Check if OpenAI LLM API is available
     if settings.OPENAI_API_KEY:
         try:
             import openai

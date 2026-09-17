@@ -122,9 +122,56 @@ def generate_ai_summary(
     raw_text: str = ""
 ) -> Tuple[str, List[str], List[str], List[str]]:
     """
-    Attempts LLM generation via OpenAI or Gemini if configured;
+    Attempts LLM generation via Gemini or OpenAI if configured;
     falls back cleanly to comprehensive local clinical intelligence.
     """
+    # 1. Attempt generation via Gemini LLM API if configured
+    if settings.GEMINI_API_KEY:
+        try:
+            import urllib.request
+            url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key={settings.GEMINI_API_KEY}"
+            prompt = f"""
+You are MediLens, an expert clinical communication assistant.
+Summarize the following laboratory findings for a patient in clear, compassionate, and plain English.
+Patient: {patient_metadata.get('patient_name', 'Patient')}
+Biomarkers:
+{json.dumps(biomarkers, indent=2)}
+
+IMPORTANT SAFETY GUARDRAILS:
+- Informational and educational only.
+- Never diagnose disease or prescribe medication.
+- Emphasize consulting a physician.
+
+Return valid JSON with keys:
+- overview: plain English patient summary
+- key_findings: array of strings explaining flagged tests
+- doctor_questions: array of 3-5 specific questions for the doctor
+- health_tips: array of general wellness tips
+"""
+            payload = {
+                "contents": [{"parts": [{"text": prompt}]}],
+                "generationConfig": {"response_mime_type": "application/json"}
+            }
+            req = urllib.request.Request(
+                url,
+                data=json.dumps(payload).encode("utf-8"),
+                headers={"Content-Type": "application/json"}
+            )
+            with urllib.request.urlopen(req, timeout=25) as response:
+                if response.status == 200:
+                    resp_data = json.loads(response.read().decode("utf-8"))
+                    text_content = resp_data["candidates"][0]["content"]["parts"][0]["text"]
+                    data = json.loads(text_content)
+                    return (
+                        data.get("overview", ""),
+                        data.get("key_findings", []),
+                        data.get("doctor_questions", []),
+                        data.get("health_tips", [])
+                    )
+        except Exception as e:
+            logger.warning(f"Gemini LLM call failed ({e}), checking alternatives.")
+
+    # 2. Attempt generation via OpenAI if configured
     if settings.OPENAI_API_KEY:
         try:
             import openai

@@ -22,6 +22,12 @@ class ChangePasswordRequest(BaseModel):
     current_password: str
     new_password: str
 
+class GoogleLoginRequest(BaseModel):
+    id_token: Optional[str] = None
+    email: EmailStr
+    full_name: Optional[str] = None
+    photo_url: Optional[str] = None
+
 class UserResponse(BaseModel):
     id: int
     email: str
