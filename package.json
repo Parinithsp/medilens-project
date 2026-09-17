@@ -4,7 +4,7 @@
   "private": true,
   "description": "MediLens AI Medical Report Summarizer & Clinical Biomarker Intelligence System",
   "scripts": {
-    "build": "cd client && npm run build",
+    "build": "npm --prefix client install && npm --prefix client run build",
     "client:install": "cd client && npm install",
     "client:dev": "cd client && npm run dev",
     "client:build": "cd client && npm run build",
