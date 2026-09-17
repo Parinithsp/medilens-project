@@ -46,6 +46,16 @@ app.include_router(chat_router, prefix="/api")
 # Static files for uploaded reports
 app.mount("/uploads", StaticFiles(directory=str(settings.UPLOAD_DIR)), name="uploads")
 
+@app.get("/")
+def root():
+    return {
+        "status": "online",
+        "service": "MediLens API",
+        "version": "1.0.0",
+        "docs": "/docs",
+        "health": "/api/health"
+    }
+
 @app.get("/api/health")
 def health_check():
     return {
